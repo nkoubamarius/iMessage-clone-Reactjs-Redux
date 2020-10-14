@@ -1,25 +1,52 @@
 import { Avatar, IconButton } from '@material-ui/core'
-import React from 'react'
+import React, { useState , useEffect} from 'react'
 import SearchIcon from '@material-ui/icons/Search';
 import RateReviewOutlinedIcon from '@material-ui/icons/RateReviewOutlined';
 import './Sidebar.css'
 import SidebarChat from './SidebarChat';
+import { useSelector } from 'react-redux';
+import { selectUser } from './features/userSlice';
+import db, {auth} from './firebase';
 
 function Sidebar() {
+    const user=useSelector(selectUser);
+    const [chats, setChats]=useState([]);
+
+    useEffect(() => {
+        db.collection("chats").onSnapshot(snapshot=>(
+            setChats(snapshot.docs.map((doc)=>({
+                id: doc.id,
+                data: doc.data(),
+            })))
+        ))
+    }, [])
+
+    const addChat=()=>{
+        const chatName=prompt('Entrer a new chat Name');
+
+        db.collection('chats').add({
+            chatName: chatName
+        })
+    }
+
+    console.log(user)
     return (
+
         <div className="sidebar">
             <div className="sidebar__header">
-                <Avatar className="sidebar__avatar"/>
+                <Avatar onClick={()=>auth.signOut()} src={user.photo} className="sidebar__avatar"/>
                 <div className="sidebar__input">
                     <SearchIcon/>
                     <input type="text" placeholder="Search"/>
                 </div>
-                <IconButton variant="outlined" className="sidebar__inputButton">
+                <IconButton onClick={addChat}  variant="outlined" className="sidebar__inputButton">
                     <RateReviewOutlinedIcon/>
                 </IconButton>
             </div>
             <div className="sidebar__chats">
-                <SidebarChat/>
+                {chats.map(({id, data:{chatName}})=>(
+                    <SidebarChat key={id} id={id} chatName={chatName} />
+                ))}
             </div>
         </div>
     )
